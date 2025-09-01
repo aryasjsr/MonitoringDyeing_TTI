@@ -1,0 +1,106 @@
+[
+  {
+    "noMc": 10,
+    "slave_id": 1,
+    "read_registers": {
+      "temp1": 32772,
+      "temp2": 36864,
+      "seam_left": 32769,
+      "seam_right": 32768,
+      "level": 32791,
+      "process": 32788,
+      "pattern": 32866,
+      "step": 32868,
+      "machine_on": 36092,
+      "batch": 34816,
+      "shift": 35840,
+      "celup": 35842,
+      "nik_op": 35940,
+      "ph": 35941,
+      "lit_mpump_hr":36040,
+      "bear_mpump_hr":36044,  
+      "seal_mpump_hr":36048,  
+      "oil_mpump_hr":36052,
+      "lit_dReelR_hr":36058,
+      "bear_dReelR_hr":36062,
+      "seal_dReelR_hr":36066,
+      "cal_temp1_hr":36093,
+      "cal_temp2_hr": 36097,
+      "nik_maintanance":36102,
+      "stat_reset":35878,
+      "id_reset":35879
+    },
+    "write_registers": {
+      "batch_map": {
+        "batch1": 34826,
+        "batch2": 34836,
+        "batch3": 34846,
+        "batch4": 34856,
+        "batch5": 34866,
+        "batch6": 34876,
+        "batch7": 34886
+      },
+      "status_registers": [
+        34896,
+        34897,
+        34898,
+        34899,
+        34900,
+        34901,
+        34902
+      ]
+    }
+  },
+  {
+    "noMc": 6,
+    "slave_id": 2,
+    "read_registers": {
+      "temp1": 32772,
+      "temp2": 36864,
+      "seam_left": 32769,
+      "seam_right": 32768,
+      "level": 32791,
+      "process": 32788,
+      "pattern": 32866,
+      "step": 32868,
+      "machine_on": 36092,
+      "batch": 34816,
+      "shift": 35840,
+      "celup": 35842,
+      "nik_op": 35940,
+      "ph": 35941,
+      "lit_mpump_hr":36040,
+      "bear_mpump_hr":36044,  
+      "seal_mpump_hr":36048,  
+      "oil_mpump_hr":36052,
+      "lit_dReelR_hr":36058,
+      "bear_dReelR_hr":36062,
+      "seal_dReelR_hr":36066,
+      "cal_temp1_hr":36093,
+      "cal_temp2_hr": 36097,
+      "nik_maintanance":36102,
+      "stat_reset":35878,
+      "id_reset":35879
+    },
+    "write_registers": {
+      "batch_map": {
+        "batch1": 34826,
+        "batch2": 34836,
+        "batch3": 34846,
+        "batch4": 34856,
+        "batch5": 34866,
+        "batch6": 34876,
+        "batch7": 34886
+      },
+      "status_registers": [
+        34896,
+        34897,
+        34898,
+        34899,
+        34900,
+        34901,
+        34902
+      ]
+    }
+  }
+]
