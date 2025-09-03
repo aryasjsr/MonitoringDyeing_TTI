@@ -46,7 +46,7 @@ client = ModbusSerialClient(
     parity="N",
     stopbits=1,
     bytesize=8,
-    timeout=1
+    timeout=2
 )
 
 #  Fungsi untuk decode register ke string
@@ -75,9 +75,8 @@ def encode_string_manually(text: str, swap_bytes: bool = True) -> list[int]:
 #  THREAD 1: Pembaca data hmi dan kirim ke InfluxDB
 def machine_monitoring_thread(machine_config: dict):
     no_mc = machine_config['noMc']
+    slave_id = machine_config['slave_id']    
     regs = machine_config['read_registers']
-    slave_id = machine_config.get('slave_id')
-    
     previous_values = {}
 
     print(f"[MC-{no_mc}] Thread monitoring dimulai.")
@@ -100,9 +99,8 @@ def machine_monitoring_thread(machine_config: dict):
                     current_values[name] = response.registers[0]
                     time.sleep(0.1)
 
-            # 2. Baca 7 register untuk batch secara khusus
-            batch_address = regs['batch']
-            batch_response = client.read_holding_registers(batch_address, count=7, unit=slave_id)
+            # 2. Baca 7 register untuk batch secara 
+            batch_response = client.read_holding_registers(regs['batch'], count=7, unit=slave_id)
             if batch_response.isError(): raise ConnectionError("Gagal membaca register 'batch'")
             # 3. Konversi 7 register tersebut menjadi satu string
             batch_string = decode_registers_to_string(batch_response.registers)
@@ -179,7 +177,7 @@ def api_hmi_reader_thread():
     print("[API HMI Reader] Thread dimulai.")
     while True:
         try:
-            response = requests.get(API_URL_STRINGS, timeout=5)
+            response = requests.get(API_URL_STRINGS, timeout=10)
             if response.status_code == 200:
                 response_data = response.json()
                 if response_data.get("status"):
@@ -196,8 +194,8 @@ def api_hmi_reader_thread():
 def hmi_writer_thread(machine_config: dict):
     global latest_hmi_strings_per_machine
     no_mc = machine_config['noMc']
+    slave_id = machine_config['slave_id']
     write_regs = machine_config['write_registers']
-    slave_id = machine_config.get('slave_id')
     
     print(f"[HMI Writer MC-{no_mc}] Thread dimulai.")
     while True:
