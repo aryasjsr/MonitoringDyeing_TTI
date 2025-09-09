@@ -17,7 +17,8 @@ INFLUX_ORG = os.getenv('INFLUX_ORG')
 INFLUX_BUCKET = os.getenv('INFLUX_BUCKET')
                           
 #  Confguration
-API_URL = os.getenv('API_URL')
+API_URL_BATCH = os.getenv('API_URL_BATCH')
+API_TRIGGER_URL = os.getenv('API_TRIGGER_URL')
 API_URL_STRINGS = os.getenv('API_URL_STRINGS')
 API_URL_STRINGS_CONF = os.getenv('API_URL_STRINGS_CONF')
 CONFIG_FILE = 'machines.json'
@@ -100,8 +101,10 @@ def machine_monitoring_thread(machine_config: dict):
             high_freq_fields = ["temp1", "temp2", "seam_left", "seam_right"]
             point_hf = Point("high_frequency_data").tag("machine_id", no_mc)
             has_new_hf_data = False
+            is_machine_on = current_values.get("machine_on", 0) > 0
+            was_machine_on = previous_values.get("machine_on", 0) > 0
             for field in high_freq_fields:
-                if current_values.get(field) != previous_values.get(field):
+                if current_values.get(field) != previous_values.get(field) or (is_machine_on and not was_machine_on):
                     # Bagi dengan 10 untuk mendapatkan nilai desimal
                     value = float(current_values.get(field, 0)) / 10.0 if "temp" in field else float(current_values.get(field, 0))
                     point_hf.field(field, value)
@@ -127,7 +130,7 @@ def machine_monitoring_thread(machine_config: dict):
             is_machine_on = current_values.get("machine_on", 0) > 0
             was_machine_on = previous_values.get("machine_on", 0) > 0
             
-            context_fields = ["nik_op", "batch", "celup", "shift",]
+            context_fields = ["nik_op", "batch", "celup", "shift"]
             context_changed = any(current_values.get(f) != previous_values.get(f) for f in context_fields)
 
             if (is_machine_on and not was_machine_on) or (is_machine_on and context_changed):
@@ -149,6 +152,25 @@ def machine_monitoring_thread(machine_config: dict):
                 point_maint.field("id_reset", current_values.get("id_reset", 0))
                 write_api.write(bucket=INFLUX_BUCKET, record=point_maint)
                 print(f"[MC-{no_mc}] Pemicu reset terdeteksi, data maintenance dikirim.")
+
+
+            #5. Simpan Batch saat process FINISH ke SQL SERVER lewat API
+            current_process = current_values.get("process", 0)
+            previous_process = previous_values.get("process", 0)
+            if  previous_process != 305 and  current_process == 305:
+                batch_send = {"batch": current_values.get("batch", "-")}
+
+                try:
+                    requests.post(API_URL_BATCH, json=batch_send, timeout=10)
+                    print(f"[Sender] Mengirim data batch ke API: {batch_send}")
+                except requests.exceptions.RequestException as e:
+                    print(f"[Sender] Tidak dapat terhubung ke API: {e}")
+
+                try:
+                    requests.post(API_TRIGGER_URL,timeout=10)
+                    print(f"[MC-{no_mc}] Pemicu akhir proses berhasil dikirim ke API 2.")
+                except Exception as e:
+                    print(f"[MC-{no_mc}] Gagal mengirim pemicu ke API 2: {e}")
 
             previous_values = current_values.copy()
 
