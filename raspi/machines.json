@@ -1,6 +1,6 @@
 [
   {
-    "noMc": 5,
+    "noMc": 1,
     "ip_address": "127.0.0.1",
     "port": 502,
     "read_registers": {
@@ -29,15 +29,9 @@
       "cal_temp2_hr": 36097,
       "nik_maintanance":36102,
       "stat_reset":35878,
-      "id_reset":35879
+      "id_reset":35879,
+      "ket_mesin_off": 35942
     },
-     "chemical_registers": [
-      { "which": "chem1", "id_addr": 36000, "value_addr": 36001 },
-      { "which": "chem2", "id_addr": 36002, "value_addr": 36003 },
-      { "which": "chem3", "id_addr": 36004, "value_addr": 36005 },
-      { "which": "chem4", "id_addr": 36006, "value_addr": 36007 },
-      { "which": "chem5", "id_addr": 36008, "value_addr": 36009 }
-    ],
     "write_registers": {
       "batch_map": {
         "batch1": 34826,
@@ -89,7 +83,8 @@
       "cal_temp2_hr": 36097,
       "nik_maintanance":36102,
       "stat_reset":35878,
-      "id_reset":35879
+      "id_reset":35879,
+      "ket_mesin_off": 35942
     },
     "write_registers": {
       "batch_map": {
