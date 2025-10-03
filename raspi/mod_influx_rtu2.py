@@ -148,7 +148,7 @@ def machine_monitoring_thread(machine_config: dict):
                 "level","process","pattern","step","ph",
                 "lit_mpump_hr","bear_mpump_hr","seal_mpump_hr","oil_mpump_hr",
                 "lit_dReelR_hr","bear_dReelR_hr","seal_dReelR_hr",
-                "cal_temp1_hr","cal_temp2_hr","machine_on"
+                "cal_temp1_hr","cal_temp2_hr","machine_on","lit_dReelL_hr","bear_dReelL_hr","seal_dReelL_hr"
             ]
             point_mf = Point("medium_frequency_data").tag("machine_id", no_mc)
             changed_mf = False
