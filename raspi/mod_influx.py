@@ -132,6 +132,7 @@ def machine_monitoring_thread(machine_config: dict):
             
             context_fields = ["nik_op", "batch", "celup", "shift"]
             context_changed = any(current_values.get(f) != previous_values.get(f) for f in context_fields)
+            context_changed_ket = current_values.get("ket_mesin_off", 0) != previous_values.get("ket_mesin_off", 0)
 
             if (is_machine_on and not was_machine_on) or (is_machine_on and context_changed):
                 point_context = Point("cycle_context_data").tag("machine_id", no_mc)
@@ -141,10 +142,18 @@ def machine_monitoring_thread(machine_config: dict):
                     point_context.field(field, str(value) if isinstance(value, str) else int(value))
                 write_api.write(bucket=INFLUX_BUCKET, record=point_context)
                 print(f"[MC-{no_mc}] Data konteks siklus (awal/perubahan) dikirim.")
+                
+            #  Jika mesin baru saja dimatikan, kirim keterangan mesin off
+            elif (not is_machine_on and was_machine_on) or (context_changed_ket and not is_machine_on):
+                point_context = Point("cycle_context_data").tag("machine_id", no_mc)
+                ket_mesin_off = current_values.get("ket_mesin_off", 0)
+                point_context.field("ket_mesin_off", ket_mesin_off)
+                write_api.write(bucket=INFLUX_BUCKET, record=point_context)
+                print(f"[MC-{no_mc}] Data konteks keterangan mesin off dikirim.")
 
             # 4. Data (Maintenance)
             current_reset = current_values.get("id_reset", 0)
-            previous_reset = 0
+            previous_reset = previous_values.get("id_reset", 0)
             
             if current_reset != previous_reset and current_reset > 0:
                 point_maint = Point("maintenance_events").tag("machine_id", no_mc)
@@ -153,24 +162,40 @@ def machine_monitoring_thread(machine_config: dict):
                 write_api.write(bucket=INFLUX_BUCKET, record=point_maint)
                 print(f"[MC-{no_mc}] Pemicu reset terdeteksi, data maintenance dikirim.")
 
+            # --- 5. Simpan Batch saat process FINISH ke SQL SERVER lewat API ---
+            current_process  = int((current_values or {}).get("process", 0) or 0)
+            previous_process = int((previous_values or {}).get("process", 0) or 0)
 
-            #5. Simpan Batch saat process FINISH ke SQL SERVER lewat API
-            current_process = current_values.get("process", 0)
-            previous_process = previous_values.get("process", 0)
-            if  previous_process != 305 and  current_process == 305:
-                batch_send = {"batch": current_values.get("batch", "-")}
+            def pick_batch(cur: dict | None, prev: dict | None) -> str:
+                """Prioritaskan batch dari current, fallback ke previous, else kosong."""
+                for src in (cur or {}, prev or {}):
+                    try:
+                        v = src.get("batch", "")
+                        s = "" if v is None else str(v).strip()
+                        if s:
+                            return s
+                    except Exception:
+                        # Kalau ada key aneh/tipe tak terduga, lewati
+                        continue
+                return ""  # dua-duanya kosong
+
+            if previous_process != 305 and current_process == 305:
+                batch_name = pick_batch(current_values, previous_values)
+                batch_send = {"batch": batch_name}
 
                 try:
-                    requests.post(API_URL_BATCH, json=batch_send, timeout=10)
+                    response = requests.post(API_URL_BATCH, json=batch_send, timeout=10)
                     print(f"[Sender] Mengirim data batch ke API: {batch_send}")
+                    print(response.status_code)
                 except requests.exceptions.RequestException as e:
                     print(f"[Sender] Tidak dapat terhubung ke API: {e}")
 
                 try:
-                    requests.post(API_TRIGGER_URL,timeout=10)
+                    requests.post(API_TRIGGER_URL, timeout=10)
                     print(f"[MC-{no_mc}] Pemicu akhir proses berhasil dikirim ke API 2.")
                 except Exception as e:
                     print(f"[MC-{no_mc}] Gagal mengirim pemicu ke API 2: {e}")
+
 
             previous_values = current_values.copy()
 
