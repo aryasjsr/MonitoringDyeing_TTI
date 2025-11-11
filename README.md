@@ -127,9 +127,4 @@ Proyek ini bersifat **internal deployment** dan tidak dimaksudkan untuk publikas
 
 ---
 
-## ✉️ Kontak
-
-Untuk dukungan teknis, hubungi **Tim Otomasi & Digital Factory - PT Trisula Textile Industries**.
-
-```
 
