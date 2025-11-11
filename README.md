@@ -1,6 +1,4 @@
 
-
-
 # Monitoring Mesin Dyeing TTI
 
 Sistem ini adalah layanan monitoring berbasis Python yang dirancang untuk mengumpulkan data dari mesin *dyeing* (pencelupan). Proyek ini mampu membaca data dari HMI/PLC mesin melalui protokol Modbus (TCP dan RTU), mengirimkan data telemetri ke database InfluxDB, dan melakukan komunikasi dua arah dengan API eksternal untuk sinkronisasi data *batch*.
@@ -15,7 +13,7 @@ Sistem ini adalah layanan monitoring berbasis Python yang dirancang untuk mengum
   1. **Lapor Selesai** — otomatis mengirim nama *batch* ke API eksternal ketika mesin melaporkan status *proses selesai*.  
   2. **Ambil Data Baru** — secara berkala mengambil daftar *batch* baru dari API.  
 - **Penulisan HMI (HMI Write-back)**: Menulis data *batch* baru yang diterima dari API kembali ke register HMI mesin.  
-- **Multithreading**: Menggunakan *thread* terpisah untuk setiap mesin dan untuk setiap tugas (membaca sensor, menulis ke HMI, mengambil data API), memungkinkan monitoring beberapa mesin secara paralel dan efisien.  
+- **Multithreading**: Menggunakan *thread* terpisah untuk setiap mesin dan setiap tugas (membaca sensor, menulis ke HMI, mengambil data API), memungkinkan monitoring beberapa mesin secara paralel dan efisien.  
 
 ---
 
@@ -111,12 +109,72 @@ python mod_influx_rtu2.py
 
 ---
 
+## 🐧 Menyiapkan Layanan (Service) di Linux (Auto-Start)
+
+Agar skrip monitoring dapat berjalan otomatis setiap kali Raspberry Pi atau server Linux *booting*, buat layanan `systemd`.
+
+### 1. Buat File Service Unit
+
+```bash
+sudo nano /etc/systemd/system/monitoring-dyeing.service
+```
+
+### 2. Isi File Service
+
+**PENTING**:
+
+* Ganti `/home/pi/MonitoringDyeing_TTI/raspi` dengan **path absolut** ke proyek.
+* Ganti `pi` dengan nama pengguna Anda.
+* Pastikan `ExecStart` menunjuk ke interpreter Python di dalam `venv` dan skrip target (`mod_influx_rtu2.py` atau `mod_influx.py`).
+
+```ini
+[Unit]
+Description=Monitoring Dyeing TTI Service
+After=network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/MonitoringDyeing_TTI/raspi
+ExecStart=/home/pi/MonitoringDyeing_TTI/raspi/venv/bin/python mod_influx_rtu2.py
+# ExecStart=/home/pi/MonitoringDyeing_TTI/raspi/venv/bin/python mod_influx.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Penjelasan Konfigurasi:**
+
+* `After=network.target` memastikan koneksi jaringan siap sebelum layanan mulai.
+* `WorkingDirectory` penting agar skrip menemukan `.env` dan file JSON.
+* `Restart=always` memastikan layanan otomatis dimulai ulang jika *crash*.
+
+### 3. Aktifkan dan Jalankan Layanan
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable monitoring-dyeing.service
+sudo systemctl start monitoring-dyeing.service
+```
+
+### 4. Periksa Status
+
+```bash
+sudo systemctl status monitoring-dyeing.service
+sudo journalctl -u monitoring-dyeing.service -f
+```
+
+---
+
 ## 🧠 Catatan Tambahan
 
 * Gunakan `mod_influx_rtu2.py` untuk bus RS-485 dengan banyak mesin (multi-slave).
 * Pastikan `bus_lock` aktif untuk mencegah *data collision* antar *thread*.
-* Jika komunikasi tidak stabil, periksa `parity`, `stopbits`, dan `baudrate` pada konfigurasi RTU.
-* Pastikan alamat register HMI sesuai dengan *mapping* di proyek Anda.
+* Jika komunikasi tidak stabil, periksa `parity`, `stopbits`, dan `baudrate`.
+* Pastikan alamat register HMI sesuai dengan *mapping* di proyek (read manual book modbus_slave untuk detailnya).
 * Pastikan InfluxDB dan API dapat diakses dari jaringan lokal mini-PC atau Raspberry Pi.
 
 ---
@@ -126,5 +184,4 @@ python mod_influx_rtu2.py
 Proyek ini bersifat **internal deployment** dan tidak dimaksudkan untuk publikasi terbuka.
 
 ---
-
 
