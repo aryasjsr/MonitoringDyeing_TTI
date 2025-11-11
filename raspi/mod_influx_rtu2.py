@@ -166,20 +166,30 @@ def machine_monitoring_thread(machine_config: dict):
                 print(f"[MC-{no_mc}] MF changed -> write Influx")
 
             # ---------- CycleContext (on-change saat mesin ON ->OFF atau OFF->ON)
-            is_on  = current_values.get("machine_on", 0) > 0
-            was_on = previous_values.get("machine_on", 0) > 0
-            ctx_fields = ["nik_op", "batch", "celup", "shift"]
-            ctx_changed = any(current_values.get(f) != previous_values.get(f) for f in ctx_fields)
-            if (is_on and not was_on) or (is_on and ctx_changed):
-                point_ctx = Point("cycle_context_data").tag("machine_id", no_mc)
-                for f in ctx_fields:
-                    v = current_values.get(f, "")
-                    if isinstance(v, str):
-                        point_ctx.field(f, v)
-                    else:
-                        point_ctx.field(f, int(v))
-                write_api.write(bucket=INFLUX_BUCKET, record=point_ctx)
-                print(f"[MC-{no_mc}] Context changed -> write Influx")
+            is_machine_on = current_values.get("machine_on", 0) > 0
+            was_machine_on = previous_values.get("machine_on", 0) > 0
+
+            is_first_run = not previous_values or previous_values == {}
+
+            context_fields = ["nik_op", "batch", "celup", "shift"]
+            context_changed = any(current_values.get(f) != previous_values.get(f) for f in context_fields)
+            context_changed_ket = current_values.get("ket_mesin_off", 0) != previous_values.get("ket_mesin_off", 0)
+
+            if (is_machine_on and not was_machine_on) or (is_machine_on and context_changed):
+                point_context = Point("cycle_context_data").tag("machine_id", no_mc)
+                for field in context_fields:
+                    v = current_values.get(field, 0)
+                    point_context.field(field, str(v) if isinstance(v, str) else int(v))
+                write_api.write(bucket=INFLUX_BUCKET, record=point_context)
+                print(f"[MC-{no_mc}] Data konteks siklus (awal/perubahan) dikirim.")
+
+            elif (not is_machine_on and (was_machine_on or context_changed_ket or is_first_run)):
+                point_context = Point("cycle_context_data").tag("machine_id", no_mc)
+                ket_mesin_off = current_values.get("ket_mesin_off", 0)
+                point_context.field("ket_mesin_off", ket_mesin_off)
+                write_api.write(bucket=INFLUX_BUCKET, record=point_context)
+                print(f"[MC-{no_mc}] Data konteks keterangan mesin off dikirim.")
+
 
             # ---------- Maintenance reset 
             cur_reset  = current_values.get("id_reset", 0)
