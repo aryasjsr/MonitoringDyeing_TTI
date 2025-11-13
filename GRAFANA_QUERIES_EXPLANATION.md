@@ -1,6 +1,6 @@
-# Penjelasan Query Grafana - Dashboard Mesin Dyeing 1
+# Penjelasan Query Grafana - Dashboard Mesin Dyeing 
 
-Dashboard ini menampilkan **9 panel** untuk monitoring real-time Mesin Dyeing 1, mengambil data dari database InfluxDB dengan menggunakan bahasa query **Flux**.
+Dashboard ini menampilkan **9 panel** untuk monitoring real-time Mesin Dyeing , mengambil data dari database InfluxDB dengan menggunakan bahasa query **Flux**.
 
 ---
 
